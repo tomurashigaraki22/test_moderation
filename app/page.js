@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import UploadZone from '@/components/UploadZone';
 import ModerationResults from '@/components/ModerationResults';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export default function Home() {
   const [uploading, setUploading] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
 
   const handleUpload = async (file) => {
@@ -16,17 +18,32 @@ export default function Home() {
     setUploading(true);
     setError(null);
     setResults(null);
+    setUploadProgress(10);
 
     const formData = new FormData();
     formData.append('video', file);
 
     try {
+      // Simulate upload progress for UX (only up to 85%)
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 85) return prev; // Stop at 85% until API completes
+          return prev + Math.random() * 20;
+        });
+      }, 400);
+
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
 
+      clearInterval(progressInterval);
+      setUploadProgress(95); // Move to 95% while processing response
+
       const data = await response.json();
+
+      // Only set to 100% after successfully processing the response
+      setUploadProgress(100);
 
       if (!response.ok) {
         setError(data.error || 'Upload failed');
@@ -36,8 +53,10 @@ export default function Home() {
       }
     } catch (err) {
       setError('Network error: ' + err.message);
+      setUploadProgress(0);
     } finally {
       setUploading(false);
+      setTimeout(() => setUploadProgress(0), 800);
     }
   };
 
@@ -56,7 +75,9 @@ export default function Home() {
 
         {/* Main Content */}
         <div className="max-w-2xl mx-auto">
-          {!results ? (
+          {uploading ? (
+            <LoadingScreen progress={uploadProgress} />
+          ) : !results ? (
             <UploadZone
               onUpload={handleUpload}
               uploading={uploading}
@@ -79,6 +100,9 @@ export default function Home() {
                 }}
                 onMouseEnter={(e) =>
                   (e.target.style.backgroundColor = '#22a861')
+                }
+                onMouseLeave={(e) =>
+                  (e.target.style.backgroundColor = '#1d8659')
                 }
               >
                 Upload Another Video

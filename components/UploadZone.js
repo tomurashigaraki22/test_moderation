@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Upload, AlertCircle } from 'lucide-react';
+import { Upload, AlertCircle, Check } from 'lucide-react';
 
 export default function UploadZone({ onUpload, uploading, error }) {
   const [isDragActive, setIsDragActive] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(null);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -25,6 +26,7 @@ export default function UploadZone({ onUpload, uploading, error }) {
     if (files && files[0]) {
       const file = files[0];
       if (file.type.startsWith('video/')) {
+        setUploadedFile(file);
         onUpload(file);
       } else {
         alert('Please drop a video file');
@@ -35,21 +37,36 @@ export default function UploadZone({ onUpload, uploading, error }) {
   const handleChange = (e) => {
     const files = e.target.files;
     if (files && files[0]) {
+      setUploadedFile(files[0]);
       onUpload(files[0]);
     }
   };
 
   return (
     <div className="w-full">
+      <style>{`
+        @keyframes bounce-subtle {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+        @keyframes fade-in {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .bounce-subtle { animation: bounce-subtle 2s ease-in-out infinite; }
+        .fade-in { animation: fade-in 0.3s ease-out; }
+      `}</style>
+
       <div
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className="relative border-2 border-dashed rounded-lg p-8 text-center transition cursor-pointer"
+        className="relative border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer"
         style={{
           borderColor: isDragActive ? '#22a861' : '#1d8659',
-          backgroundColor: isDragActive ? 'rgba(29, 134, 89, 0.1)' : 'rgba(29, 134, 89, 0.05)',
+          backgroundColor: isDragActive ? 'rgba(29, 134, 89, 0.15)' : 'rgba(29, 134, 89, 0.05)',
+          transform: isDragActive ? 'scale(1.01)' : 'scale(1)',
         }}
       >
         <input
@@ -65,10 +82,12 @@ export default function UploadZone({ onUpload, uploading, error }) {
           htmlFor="fileInput"
           className="cursor-pointer flex flex-col items-center gap-3"
         >
-          <Upload
-            size={48}
-            style={{ color: '#22a861', opacity: uploading ? 0.6 : 1 }}
-          />
+          <div className="bounce-subtle">
+            <Upload
+              size={48}
+              style={{ color: '#22a861', opacity: uploading ? 0.6 : 1 }}
+            />
+          </div>
           <div>
             <p className="text-xl font-semibold" style={{ color: '#ffffff' }}>
               {uploading ? 'Uploading & Analyzing...' : 'Drop your video here'}
@@ -79,20 +98,12 @@ export default function UploadZone({ onUpload, uploading, error }) {
           </div>
         </label>
 
-        {uploading && (
-          <div className="mt-4">
-            <div className="w-full bg-gray-700 rounded-full h-2">
-              <div
-                className="h-2 rounded-full transition-all duration-300"
-                style={{
-                  backgroundColor: '#22a861',
-                  width: '66%',
-                }}
-              />
+        {uploadedFile && !uploading && (
+          <div className="mt-4 fade-in p-3 rounded-lg" style={{ backgroundColor: 'rgba(34, 168, 97, 0.1)' }}>
+            <div className="flex items-center gap-2" style={{ color: '#22a861' }}>
+              <Check size={20} />
+              <span className="text-sm font-medium">{uploadedFile.name}</span>
             </div>
-            <p style={{ color: '#b0b0b0' }} className="text-xs mt-2">
-              Running detection engines...
-            </p>
           </div>
         )}
       </div>
